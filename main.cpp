@@ -10,26 +10,34 @@ struct String_linked_lists
 //存储了需要的文件和生成它们的方法
 struct Required_documents
 {
-   String_linked_lists need;//需要的文件
-   String_linked_lists order;//生成这些文件的命令
-   Required_documents*link;//链表指针
+   String_linked_lists*need;//需要的文件
+   String_linked_lists*order;//生成这些文件的命令
+   String_linked_lists*Dependent;//依赖的文件
+   Required_documents*link = NULL;//链表指针
 };
+//存储文件和命令的对应关系
+Required_documents *Required_Root = NULL;
 //任务队列节点，需要执行的任务由多个链的节点连接而成
 class Task_queues
 {
     public:
-    Required_documents*Task;
+    //执行编译
+    String_linked_lists *need = NULL;//需要的文件
+    Task_queues*D = NULL;//下一个节点，如果发现不能就地解决的话，构建传递给下一个自身实例
+    //开始编译程序
+    void run()
+    {
+        Required_documents *Required = Required_Root;
+        //开始执行编译脚本
+        std::cout<<"Start compilation"<<std::endl;
+
+    }
 };
 
 //全局变量区
 //根任务节点
 Task_queues*Task_Root = NULL;
 
-//引号处理程序，匹配第一个引号，并将其中的字符串提取出
-void Draw_handlers()
-{
-
-}
 //括号处理程序，匹配第一个括号，并将其中的字符串提取出
 String_linked_lists *Bracket_handlers(std::string order)
 {
@@ -82,30 +90,71 @@ String_linked_lists *commas_handlers(std::string order)
 //指令解释器程序，由外部传入指令内部将指令转化为计算节点或程序配置
 void Command_interpreter(std::string order)
 {
-    //依赖关系
+    //添加生成指令
     if(order.rfind("Dependent", 0) == 0)
     {
-        std::cout<<"Add dependencies\n";
-        Bracket_handlers(order);
-    }
-    //添加生成指令
-    else if(order.rfind("Generation", 0) == 0)
-    {
         std::cout<<"Add a build directive\n";
-        Bracket_handlers(order);
+        //读取数据
+        String_linked_lists*link = Bracket_handlers(order);
+        //创建存储对象
+        Required_documents *DATA = new Required_documents;
+        if (link!=NULL)
+        {
+            //读取生成依赖项
+            DATA->Dependent = commas_handlers(link->DATA);
+            //删除节点
+            String_linked_lists* i = link;
+            link = link->link;
+            delete i;//函数内new的对象，要在函数外delete
+        }
+        if (link!=NULL)
+        {
+            //读取生成指令
+            DATA->order = commas_handlers(link->DATA);
+            //删除节点
+            String_linked_lists* i = link;
+            link = link->link;
+            delete i;//函数内new的对象，要在函数外delete
+        }
+        if (link!=NULL)
+        {
+            //读取生成文件
+            DATA->need = commas_handlers(link->DATA);
+            //删除节点
+            String_linked_lists* i = link;
+            link = link->link;
+            delete i;//函数内new的对象，要在函数外delete
+        }
+        DATA->link = Required_Root;//加入链表
+        Required_Root = DATA;
+        //删除更多的节点
+        while (link!=NULL)
+        {
+            String_linked_lists* i = link;
+            link = link->link;
+            delete i;//函数内new的对象，要在函数外delete
+        }
+        
+
     }
     //添加预处理器
     else if(order.rfind("replace", 0) == 0)
     {
         std::cout<<"Add a preprocessor\n";
-        Bracket_handlers(order);
+        String_linked_lists*link = Bracket_handlers(order);
     }
     //添加目标文件
     else if(order.rfind("demand", 0) == 0)
     {
         std::cout<<"Add the target file\n";
-
-        Bracket_handlers(order);
+        String_linked_lists*link = Bracket_handlers(order);
+        if (link == NULL)
+        {
+            String_linked_lists **need = &Task_Root->need;//获取链表指针
+            while ((*need)->link!=NULL)(*need)=(*need)->link;//移动到链表末尾
+            (*need)->link = link;//插入链表
+        }
+        
     }
 }
 //任务读取程序，用于从硬盘中读取任务
@@ -155,5 +204,5 @@ int main()
     std::cout<<"The project.txt file is being read\n";
     Task_Root = new Task_queues;//new一个根对象
     Task_read();
-    
+    Task_Root->run();
 }

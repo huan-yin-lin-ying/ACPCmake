@@ -4,17 +4,12 @@ replace("AAA","main.exe");
 #Generation ({$AAA},{G++ main.cpp -o main.exe});#
 #就相当于#
 #Generation ({main.exe},{G++ main.cpp -o main.exe});#
-#类似于预处理器#
+#类似于预处理器,需要写在文件开始#
+
+Dependent ({main.exe|main2.exe},{main.cpp|main2.cpp},{G++ main.cpp -o main.exe});
+#这是个基础用法，意思为main.exe和main2.exe需要main.cpp和main2.cpp需要执行G++ main.cpp -o main.exe才能生成#
+#括号内可以放置多个文件名，用英文|隔开#
+#运行过程基于递归#
 
 demand({main.exe});
 #这是需求指令,告诉软件我们实际需要什么文件#
-
-
-Dependent ({main.exe|main2.exe},{main.cpp|main2.cpp});
-#这是个基础用法，意思为main.exe和main2.exe需要main.cpp和main2.cpp才能生成#
-#括号内可以放置多个文件名，用英文|隔开#
-
-Generation ({main.exe},{G++ main.cpp -o main.exe});
-#这个意思是，生成main.exe需要执行G++ main.cpp -o main.exe#
-Generation ({main.exe},{echo main.exe生成中});
-#运行过程基于递归，所以内部会使用到类似多线程的技术#
